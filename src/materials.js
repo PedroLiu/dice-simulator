@@ -138,42 +138,53 @@ export function drawGoldFoilLabel(textureData, diceDef, labels, index, _size, ma
   const drawOne = (text, x, y, fontSize) => {
     const value = String(text).trim();
     if (!value || value === '0') return;
-    // 用粗一号的字重，保证在深色/花纹面上也能一眼看清。
-    ctx.font = `600 ${fontSize}px "Cormorant Garamond", "DNDOfficial", "Cinzel", Georgia, serif`;
+    // 更粗的字重（700），比 600 视觉重量明显；无衬线字体在低分屏更清晰。
+    ctx.font = `700 ${fontSize}px "Cinzel", "Cormorant Garamond", Georgia, sans-serif`;
 
-    // 外层柔和黑晕：先大范围模糊阴影铺一层深色底，把复杂纹理挤开。
+    // === 1. 底盘：先在字底下画一个大黑晕圆，把复杂纹理彻底盖掉。这是社区最有效的招 ===
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-    ctx.shadowBlur = Math.max(4, fontSize * 0.14);
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.lineWidth = Math.max(3, fontSize * 0.11);
-    ctx.strokeStyle = 'rgba(20, 8, 0, 0.92)';
+    const bgRadius = fontSize * 0.68;
+    const bgGrad = ctx.createRadialGradient(x, y, 0, x, y, bgRadius);
+    bgGrad.addColorStop(0, 'rgba(0, 0, 0, 0.72)');
+    bgGrad.addColorStop(0.65, 'rgba(0, 0, 0, 0.45)');
+    bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = bgGrad;
+    ctx.beginPath();
+    ctx.arc(x, y, bgRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // === 2. 外层柔和黑晕：模糊阴影再铺一层 ===
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+    ctx.shadowBlur = Math.max(6, fontSize * 0.18);
+    ctx.lineWidth = Math.max(4, fontSize * 0.14);
+    ctx.strokeStyle = 'rgba(15, 5, 0, 0.98)';
     ctx.strokeText(value, x, y);
     ctx.restore();
 
-    // 深色刻槽描边，让数字有清晰硬边缘，字号视觉更“重”。
-    ctx.lineWidth = Math.max(2, fontSize * 0.075);
-    ctx.strokeStyle = 'rgba(35, 14, 0, 0.95)';
+    // === 3. 深色硬描边：清晰硬边缘 ===
+    ctx.lineWidth = Math.max(3, fontSize * 0.10);
+    ctx.strokeStyle = 'rgba(28, 10, 0, 1)';
     ctx.strokeText(value, x, y);
 
-    // 烫金主体：更亮、更饱和，中段留一段亮金。
+    // === 4. 烫金主体：亮金渐变 ===
     const gold = ctx.createLinearGradient(0, y - fontSize * 0.55, 0, y + fontSize * 0.55);
     gold.addColorStop(0.00, '#ffffff');
-    gold.addColorStop(0.14, '#fff2c2');
-    gold.addColorStop(0.40, '#ffcc4a');
-    gold.addColorStop(0.72, '#a86215');
+    gold.addColorStop(0.12, '#fff2c2');
+    gold.addColorStop(0.42, '#ffd85a');
+    gold.addColorStop(0.72, '#b57018');
     gold.addColorStop(1.00, '#4b1f04');
     ctx.fillStyle = gold;
     ctx.fillText(value, x, y);
 
-    // 顶部高光：更强的白色描边，仅出现在字的上半部。
+    // === 5. 顶部高光：白色描边只出现在字的上半部 ===
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, y - fontSize, S, fontSize * 0.72);
+    ctx.rect(0, y - fontSize, S, fontSize * 0.68);
     ctx.clip();
-    ctx.lineWidth = Math.max(1, fontSize * 0.028);
-    ctx.strokeStyle = 'rgba(255, 250, 220, 0.95)';
+    ctx.lineWidth = Math.max(1, fontSize * 0.035);
+    ctx.strokeStyle = 'rgba(255, 250, 220, 1)';
     ctx.strokeText(value, x, y);
     ctx.restore();
   };
@@ -191,7 +202,8 @@ export function drawGoldFoilLabel(textureData, diceDef, labels, index, _size, ma
       ctx.rotate(rotation * Math.PI / 180);
       ctx.translate(-S / 2, -S / 2);
     }
-    let fontSize = S / (1 + 2 * margin) * 0.72;
+    // 字号放大到 0.82（原 0.72），黑底盘足够压住纹理，视觉更抢眼。
+    let fontSize = S / (1 + 2 * margin) * 0.82;
     let x = S / 2;
     let y = S / 2 + 10;
     if (diceDef.shape === 'd10') { fontSize *= 0.78; y = y * 1.15 - 10; }

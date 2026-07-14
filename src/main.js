@@ -186,6 +186,7 @@ async function init() {
     await box.initialize();
     applyAllParams();
     tuneWorldPhysics(box, bottomControlsEl);
+    installContextLossHandler();
     setStatus('已加载，输入表达式后掷骰');
     // 音效后台加载，加载完了才启用；失败也不影响掷骰。
     loadCustomSounds();
@@ -194,6 +195,38 @@ async function init() {
     setStatus(`初始化失败：${err?.message || err}`);
     showResultSummary('!', String(err?.message || err));
   }
+}
+
+// iOS Safari 会主动释放 WebGL context（切后台、GPU 抢占、内存吃紧都会触发），
+// 恢复后如果不处理，画面永远白/黑；这里监听并重建纹理/几何缓存。
+function installContextLossHandler() {
+  const canvas = box.renderer?.domElement;
+  if (!canvas) return;
+  canvas.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault(); // 必须调，否则 context 不会恢复
+    console.warn('WebGL context lost, waiting for restore...');
+    setStatus('画面被系统回收，稍等...');
+  }, false);
+  canvas.addEventListener('webglcontextrestored', () => {
+    console.warn('WebGL context restored');
+    try {
+      // 三大件重建：材质缓存、几何缓存、textures 全部作废，让下次 spawn 时重新上传到新的 GL context。
+      if (box.DiceFactory) {
+        box.DiceFactory.materials_cache = {};
+        box.DiceFactory.geometries = {};
+      }
+      // 清掉桌面上残留的骰子引用（body 还在 world 里；但 mesh 关联的 GL 资源已经无效）。
+      box.clearDice?.();
+      // 让 three.js 内部丢弃已上传的纹理/程序。
+      box.renderer?.dispose?.();
+      // 触发一次空 render，把新 context 拉起来。
+      box.renderer?.render?.(box.scene, box.camera);
+      setStatus('画面已恢复，可继续掷骰');
+    } catch (err) {
+      console.error('重建 WebGL 资源失败', err);
+      setStatus('画面恢复失败，请刷新页面');
+    }
+  }, false);
 }
 
 async function loadCustomSounds() {
