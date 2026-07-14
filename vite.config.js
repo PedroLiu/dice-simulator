@@ -5,4 +5,16 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: './',
+  build: {
+    // Three + cannon 体积大，拆成独立 chunk，便于缓存；入口小包先到站即可画 HUD。
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/@3d-dice/dice-box-threejs') || id.includes('node_modules/three') || id.includes('node_modules/cannon-es')) {
+            return 'dice-engine';
+          }
+        },
+      },
+    },
+  },
 });

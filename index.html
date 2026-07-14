@@ -14,10 +14,7 @@
     <!-- iOS 主屏图标必须是 PNG，SVG 会被忽略；180x180 是官方推荐尺寸。 -->
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" sizes="180x180" />
     <title>骰子模拟器</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- UI + 骰面数字都用 Cinzel Decorative（笔画瘦且有装饰感，DND 圈热门）；额外准备 Cinzel 作为侧栏文字备选。 -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700;900&display=swap" rel="stylesheet" />
+    <!-- 字体自托管（style.css @font-face），不阻塞首屏的 Google Fonts。 -->
   </head>
   <body>
     <div id="app">
@@ -47,12 +44,12 @@
           <output data-value="size">92</output>
         </label>
         <div id="material-preset" class="material-grid" role="radiogroup" aria-label="材质预设">
-          <button type="button" class="material-option active" data-material="astralsea" role="radio" aria-checked="true"><span class="material-swatch astralsea"></span><span>Astral Sea<br />星界海</span></button>
-          <button type="button" class="material-option" data-material="bloodmoon" role="radio" aria-checked="false"><span class="material-swatch bloodmoon"></span><span>Blood Moon<br />血月</span></button>
+          <button type="button" class="material-option active" data-material="bronze" role="radio" aria-checked="true"><span class="material-swatch bronze"></span><span>Bronze<br />青铜</span></button>
+          <button type="button" class="material-option" data-material="astralsea" role="radio" aria-checked="false"><span class="material-swatch astralsea"></span><span>Astral Sea<br />星界海</span></button>
           <button type="button" class="material-option" data-material="fire" role="radio" aria-checked="false"><span class="material-swatch fire"></span><span>Fire<br />火焰</span></button>
-          <button type="button" class="material-option" data-material="bronze" role="radio" aria-checked="false"><span class="material-swatch bronze"></span><span>Bronze<br />青铜</span></button>
-          <button type="button" class="material-option" data-material="astral" role="radio" aria-checked="false"><span class="material-swatch astral"></span><span>Astral<br />星海</span></button>
-          <button type="button" class="material-option" data-material="cloudy" role="radio" aria-checked="false"><span class="material-swatch cloudy"></span><span>Cloudy<br />云雾</span></button>
+          <button type="button" class="material-option" data-material="blackgold" role="radio" aria-checked="false"><span class="material-swatch blackgold"></span><span>Black Gold<br />黑金</span></button>
+          <button type="button" class="material-option" data-material="silver" role="radio" aria-checked="false"><span class="material-swatch silver"></span><span>Cast Silver<br />银铸</span></button>
+          <button type="button" class="material-option" data-material="moonstone" role="radio" aria-checked="false"><span class="material-swatch moonstone"></span><span>Moonstone<br />月光石</span></button>
         </div>
       </section>
 
@@ -64,8 +61,11 @@
 
       <nav class="bottom-controls" aria-label="操作">
         <button id="force-toggle" type="button" class="side-button" aria-label="力度" title="力度">
+          <!-- DND 力量属性图标：屈臂二头肌（forearm 竖臂 + upper arm 横臂 + bicep 隆起）。 -->
           <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-            <path d="M19 28V15a5 5 0 0 1 10 0v10h1V12a5 5 0 0 1 10 0v13h1V15a5 5 0 0 1 10 0v18l2-3a5 5 0 0 1 8 6L49 55H24L12 42a6 6 0 0 1 7-9l4 3v-8h-4z" />
+            <rect x="38" y="8" width="16" height="38" rx="8" />
+            <rect x="8" y="40" width="46" height="16" rx="8" />
+            <circle cx="28" cy="31" r="12" />
           </svg>
         </button>
         <button id="roll-button" type="button" class="roll-button" aria-label="掷骰，长按编辑表达式" title="掷骰，长按编辑表达式"></button>

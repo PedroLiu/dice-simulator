@@ -15,7 +15,8 @@ export const params = {
 // UI/掷骰会话相关的运行时状态。preset 是当前材质预设名，pendingRoll/resultDisplayedForRoll
 // 由 main.roll 与 startStableResultWatcher / renderResults 共享。
 export const ui = {
-  preset: 'astralsea',
+  // 默认青铜；贴图已并行加载，冷启动可比原先串行 astralsea 更好接受。
+  preset: 'bronze',
   pendingRoll: null,
   resultDisplayedForRoll: false,
 };

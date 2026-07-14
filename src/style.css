@@ -13,6 +13,15 @@ button,
   touch-action: manipulation;
 }
 
+/* 自托管一字重：骰面烫金数字依赖；UI 先走系统衬线，字体到了再用。 */
+@font-face {
+  font-family: 'Cinzel Decorative';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/cinzel-decorative-latin-400.woff2') format('woff2');
+}
+
 html,
 body {
   margin: 0;
@@ -22,29 +31,9 @@ body {
   overscroll-behavior: none;
   background: #08060d;
   color: #f5f0df;
-  font-family: 'Cinzel', ui-serif, Georgia, serif;
+  font-family: 'Cinzel Decorative', Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
   touch-action: manipulation;
   user-select: none;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(10, 6, 16, 0.16), rgba(5, 3, 10, 0.44)),
-    radial-gradient(circle at 50% 18%, rgba(255, 210, 120, 0.20), transparent 30%),
-    url('./assets/abyss-bg.png') center / cover no-repeat;
-  filter: saturate(1.05) contrast(1.05);
-  z-index: -2;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.38) 78%);
-  z-index: -1;
 }
 
 #app {
@@ -54,9 +43,12 @@ body::after {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  /* 直接挂在应用根节点，避免负 z-index 被 body 实色背景遮住。 */
   background:
-    linear-gradient(180deg, rgba(10, 6, 16, 0.12), rgba(5, 3, 10, 0.34)),
-    url('./assets/abyss-bg.png') center / cover no-repeat;
+    radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.38) 78%),
+    linear-gradient(180deg, rgba(10, 6, 16, 0.16), rgba(5, 3, 10, 0.44)),
+    radial-gradient(circle at 50% 18%, rgba(255, 210, 120, 0.20), transparent 30%),
+    url('./assets/abyss-bg.webp') center / cover no-repeat;
 }
 
 #scene-container {
@@ -345,12 +337,12 @@ button {
   box-shadow: inset 0 2px 8px rgba(255,255,255,0.18), inset 0 -8px 12px rgba(0,0,0,0.28);
 }
 
-.material-swatch.astralsea { background: linear-gradient(135deg, #050505, #001b32, #ff7b00); }
-.material-swatch.bloodmoon { background: linear-gradient(135deg, #160000, #6f0000, #b83a3a); }
+.material-swatch.bronze { background: linear-gradient(135deg, #301700, #7a4e06, #d4a02a); }
+.material-swatch.astralsea { background: linear-gradient(135deg, #050505, #001b32, #c47820); }
 .material-swatch.fire { background: linear-gradient(135deg, #4c1009, #f43c04, #f8d84f); }
-.material-swatch.bronze { background: linear-gradient(135deg, #301700, #7a4e06, #ffa20d); }
-.material-swatch.astral { background: linear-gradient(135deg, #3a5a90, #5578b8, #a0b8dc); }
-.material-swatch.cloudy { background: linear-gradient(135deg, #0a0f18, #4a5a6f, #a0b0c8); }
+.material-swatch.blackgold { background: linear-gradient(135deg, #050505, #252018, #d4a84e); }
+.material-swatch.silver { background: linear-gradient(135deg, #737b82, #c4c8cb, #f6c85f); }
+.material-swatch.moonstone { background: linear-gradient(135deg, #596976, #778491, #b0b7bc); }
 
 .expression-panel {
   position: absolute;

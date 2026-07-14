@@ -3,7 +3,7 @@
 // - 带 hash 的静态资源（assets/*、textures/*、sounds/*）：cache-first，充分利用离线缓存
 // 用 self.registration.scope 自适配子路径（dev '/'；GitHub Pages '/<repo>/'）
 
-const CACHE_NAME = 'dice-simulator-v4';
+const CACHE_NAME = 'dice-simulator-v5';
 const scope = new URL(self.registration.scope);
 
 const CORE_ASSETS = [

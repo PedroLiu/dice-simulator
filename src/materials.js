@@ -4,25 +4,27 @@
 import { ui } from './state.js';
 
 export const materialPresets = {
-  // 保留稳定的社区预设，并加入红/蓝/紫宝石风格；骰面统一用烫金字体。
+  // 偏金属 / 半透明；骰面统一烫金数字（见 drawGoldFoilLabel）。
+  bronze: {
+    label: 'Thylean 青铜',
+    foreground: '#f6c85f',
+    background: ['#705206', '#7A4E06', '#643100', '#7A2D06'],
+    outline: ['#3D2D03', '#472D04', '#301700', '#471A04'],
+    // 边棱略收敛，少一点霓虹橙
+    edge: ['#c47820', '#d49030', '#b86818', '#e0a040'],
+    texture: ['bronze01', 'bronze02', 'bronze03', 'bronze03a', 'bronze03b', 'bronze04'],
+    material: 'metal',
+    description: 'Thylean Bronze：多层青铜金属，烫金数字',
+  },
   astralsea: {
     label: 'Astral Sea 星界海',
     foreground: '#f6c85f',
     background: ['#000000', '#400303', '#040404', '#001B32'],
     outline: ['#3D2D03', '#472D04', '#301700', '#471A04'],
-    edge: ['#FF5D0D', '#FF7B00', '#FFA20D', '#FFBA0D'],
+    edge: ['#c47820', '#d49030', '#b86818', '#e0a040'],
     texture: ['bronze01', 'bronze02', 'bronze03', 'bronze03a', 'bronze03b', 'bronze04'],
     material: 'metal',
-    description: '社区内置 Astral Sea：深色金属 + 青铜纹理，整体最稳',
-  },
-  bloodmoon: {
-    label: 'Blood Moon 血月',
-    foreground: '#f6c85f',
-    background: '#6F0000',
-    outline: '#160000',
-    texture: 'marble',
-    material: 'plastic',
-    description: '社区内置 Blood Moon：红黑大理石，暗黑风格',
+    description: '深色金属底 + 青铜纹理',
   },
   fire: {
     label: 'Fire 火焰',
@@ -31,44 +33,45 @@ export const materialPresets = {
     outline: '#160600',
     texture: 'fire',
     material: 'metal',
-    description: '社区内置 Fire：火焰纹理 + 金属高光',
+    description: '火焰纹理 + 金属高光',
   },
-  // ↓ 以下三个是社区（3d-dice 官方仓库 colorsets.js）内置预设，颜值稳定 + 手机端可读性好。
-  bronze: {
-    label: 'Thylean 青铜',
-    foreground: ['#FF9159', '#FFB066', '#FFBF59', '#FFD059'],
-    background: ['#705206', '#7A4E06', '#643100', '#7A2D06'],
-    outline: ['#3D2D03', '#472D04', '#301700', '#471A04'],
-    edge: ['#FF5D0D', '#FF7B00', '#FFA20D', '#FFBA0D'],
-    texture: ['bronze01', 'bronze02', 'bronze03', 'bronze03a', 'bronze03b', 'bronze04'],
+  blackgold: {
+    label: 'Black Gold 黑金',
+    foreground: '#f6c85f',
+    background: ['#080706', '#15120d', '#211b11', '#050505'],
+    outline: '#000000',
+    edge: ['#8e6b25', '#c99b3d', '#6c501c'],
+    texture: 'metal',
     material: 'metal',
-    description: 'Thylean Bronze：多层青铜金属渐变，最有游戏味',
+    description: '哑黑金属 + 暗金边棱，烫金数字',
   },
-  // Astral 星海：中亮蓝底 + astral 星云纹。astral 贴图是 multiply 混合（底色 × 花纹），
-  // 底色越亮，花纹越明显。用中等亮度蓝色，花纹才能清晰浮现。
-  astral: {
-    label: 'Astral 星海',
-    foreground: '#f4f8ff',
-    background: ['#3a5a90', '#4468a5', '#3d6bad', '#5578b8'],
-    outline: '#050a18',
-    texture: 'astral',
-    material: 'plastic',
-    description: 'Astral：中亮蓝底 + 星云纹，花纹清晰',
+  silver: {
+    label: 'Cast Silver 银铸',
+    foreground: '#f6c85f',
+    background: ['#aeb4b9', '#858d94', '#c4c8cb', '#737b82'],
+    outline: '#24282c',
+    edge: ['#d5d8da', '#9ba2a8', '#edf0f1'],
+    texture: 'metal',
+    material: 'metal',
+    metalRoughness: 0.28,
+    envMapIntensity: 1.35,
+    description: '拉丝银色金属 + 金色数字',
   },
-  // Cloudy 云雾：cloudy_2 是 multiply 云纹（不像 cloudy 是透明蒙版），配 plastic 干净稳重。
-  cloudy: {
-    label: 'Cloudy 云雾',
-    foreground: '#f8f8f8',
-    background: '#4a5a6f',
-    outline: '#0a0f18',
-    texture: 'cloudy_2',
-    material: 'plastic',
-    description: 'Cloudy：蓝灰云纹 + 塑料质感，稳重耐看',
+  moonstone: {
+    label: 'Moonstone 月光石',
+    foreground: '#f6c85f',
+    background: ['#778491', '#667582', '#89949e', '#596976'],
+    outline: '#242d35',
+    edge: ['#9ca8b1', '#7f909d', '#b0b7bc'],
+    texture: 'marble',
+    material: 'glass',
+    envMapIntensity: 1.05,
+    description: '中灰蓝大理石纹 + 金色数字',
   },
 };
 
 export function getPreset(key = ui.preset) {
-  return materialPresets[key] || materialPresets.astralsea;
+  return materialPresets[key] || materialPresets.bronze;
 }
 
 function hexToRgba(hex, alpha) {
@@ -203,19 +206,17 @@ export function drawGoldFoilLabel(textureData, diceDef, labels, index, _size, ma
   texture.needsUpdate = true;
 }
 
-// 库生成的骰子材质是 MeshStandardMaterial；对于半透明宝石，我们额外调 emissive 和粗糙度。
+// 库生成的骰子材质是 MeshStandardMaterial；半透明预设才开 transparent / emissive。
 export function tuneDieMaterials(die) {
   if (!die?.material) return;
   const preset = getPreset();
   const mats = Array.isArray(die.material) ? die.material : [die.material];
   for (const mat of mats) {
     if (!mat) continue;
-    mat.transparent = true;
-    mat.depthWrite = false;
-    mat.alphaTest = preset.transparent ? 0.02 : 0;
-    // 官方 glass 是 MeshStandardMaterial，透明度主要来自 Canvas 贴图 alpha。
-    // 磨砂玻璃感靠：高粗糙度 + 半透明 + 自发光让内部“透出对应颜色的光”。
     if (preset.transparent) {
+      mat.transparent = true;
+      mat.depthWrite = false;
+      mat.alphaTest = 0.02;
       mat.roughness = preset.roughness ?? Math.min(mat.roughness ?? 0.1, 0.08);
       mat.metalness = 0;
       mat.envMapIntensity = preset.envMapIntensity ?? 1.4;
@@ -223,14 +224,23 @@ export function tuneDieMaterials(die) {
         try {
           mat.emissive.set(preset.emissive);
           mat.emissiveIntensity = preset.emissiveIntensity ?? 0.4;
-        } catch { /* 某些自定义材质没有 emissive.set，忽略即可 */ }
-      } else if (mat.emissive?.setRGB) {
+        } catch { /* ignore */ }
+      }
+    } else {
+      // 金属等不透明：不要全局开 transparent，否则 depthWrite 关了容易发脏、穿模。
+      mat.transparent = false;
+      mat.depthWrite = true;
+      mat.alphaTest = 0;
+      if (preset.material === 'metal') {
+        mat.roughness = preset.metalRoughness ?? Math.min(mat.roughness ?? 0.5, 0.36);
+        mat.envMapIntensity = preset.envMapIntensity ?? 1.2;
+      } else if (preset.envMapIntensity != null) {
+        mat.envMapIntensity = preset.envMapIntensity;
+      }
+      if (mat.emissive?.setRGB) {
         mat.emissive.setRGB(0, 0, 0);
         mat.emissiveIntensity = 0;
       }
-    } else if (mat.emissive?.setRGB) {
-      mat.emissive.setRGB(0, 0, 0);
-      mat.emissiveIntensity = 0;
     }
     mat.needsUpdate = true;
   }
