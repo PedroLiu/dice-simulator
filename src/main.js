@@ -371,7 +371,6 @@ async function showStyleSamples() {
   box.clearDice();
   box.rolling = false;
   box.notationVectors = null;
-  setStatus('样式预览');
   clearResultSummary();
   try {
     await box.roll('1d4+1d6+1d8+1d10+1d12+1d20');
@@ -382,7 +381,6 @@ async function showStyleSamples() {
 
 async function applyVisualPreset() {
   const preset = getPreset();
-  setStatus(`切换材质：${preset.label}`);
   await box.updateConfig({
     theme_customColorset: buildColorSet(),
     theme_texture: preset.texture,
@@ -392,7 +390,6 @@ async function applyVisualPreset() {
   box.DiceFactory.materials_cache = {};
   box.DiceFactory.geometries = {};
   box.clearDice();
-  setStatus(`材质已切换：${preset.label}`);
   if (!stylePanelEl?.classList.contains('hidden')) await showStyleSamples();
 }
 
