@@ -268,8 +268,14 @@ paramInputs.forEach((input) => {
 });
 
 // 长按打开表达式编辑器，短按掷骰。
+// iOS Safari 特殊性：长按按钮会触发 haptic touch / callout 菜单，把 pointerup 吞成 pointercancel，
+// 导致"点了没反应"。所以：
+//   1) pointerdown 里 preventDefault，避免 iOS 触发触觉反馈选择菜单；
+//   2) 用 click 事件作为掷骰兜底 —— pointer 序列被打断后浏览器还会派发 click；
+//   3) 加一层短按标志，防止 pointerup 和 click 重复触发。
 let longPressTimer = null;
 let longPressTriggered = false;
+let shortPressJustHandled = false;
 
 function showExpressionEditor() {
   hideTransientPanels('expression');
@@ -278,7 +284,16 @@ function showExpressionEditor() {
   notationEl.select();
 }
 
-rollButtonEl?.addEventListener('pointerdown', () => {
+function triggerRoll() {
+  if (shortPressJustHandled) return;
+  shortPressJustHandled = true;
+  setTimeout(() => { shortPressJustHandled = false; }, 400); // 防抖：pointerup 和 click 只处理一次
+  hideTransientPanels();
+  roll(notationEl.value);
+}
+
+rollButtonEl?.addEventListener('pointerdown', (event) => {
+  event.preventDefault(); // 阻止 iOS 长按弹选择菜单/触觉反馈，避免 pointerup 被 cancel
   longPressTriggered = false;
   clearTimeout(longPressTimer);
   longPressTimer = setTimeout(() => {
@@ -289,10 +304,13 @@ rollButtonEl?.addEventListener('pointerdown', () => {
 
 rollButtonEl?.addEventListener('pointerup', () => {
   clearTimeout(longPressTimer);
-  if (!longPressTriggered) {
-    hideTransientPanels();
-    roll(notationEl.value);
-  }
+  if (!longPressTriggered) triggerRoll();
+});
+
+// iOS 上 pointer 序列可能被系统打断（比如触觉反馈生效），但 click 事件依然会派发，这里兜底。
+rollButtonEl?.addEventListener('click', () => {
+  clearTimeout(longPressTimer);
+  if (!longPressTriggered) triggerRoll();
 });
 
 rollButtonEl?.addEventListener('pointercancel', () => clearTimeout(longPressTimer));
