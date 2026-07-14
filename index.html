@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#08060d" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="骰子模拟器" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/dice-icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./icons/icon-192.png" type="image/png" sizes="192x192" />
+    <!-- iOS 主屏图标必须是 PNG，SVG 会被忽略；180x180 是官方推荐尺寸。 -->
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" sizes="180x180" />
+    <title>骰子模拟器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500&family=IM+Fell+English+SC&family=Uncial+Antiqua&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <main id="scene-container"></main>
+
+      <div class="hud top-hud">
+        <div id="status">初始化中...</div>
+        <div id="result-summary" class="result-summary hidden" aria-live="polite">
+          <div id="result-total" class="result-total"><span class="total-label">总计</span><span class="total-value">0</span></div>
+          <div id="result-detail" class="result-detail"></div>
+        </div>
+      </div>
+
+      <section id="force-panel" class="floating-panel force-panel hidden" aria-label="力度设置">
+        <label class="force-control">
+          <span>力度</span>
+          <input type="range" min="1" max="10" step="0.1" value="3.5" data-param="force" />
+          <output data-value="force">3.5</output>
+        </label>
+        <p>越大：位移略增，旋转更明显、更久</p>
+      </section>
+
+      <section id="style-panel" class="floating-panel style-panel hidden" aria-label="骰子样式">
+        <label class="size-control">
+          <span>大小</span>
+          <input type="range" min="60" max="140" step="1" value="92" data-param="size" />
+          <output data-value="size">92</output>
+        </label>
+        <div id="material-preset" class="material-grid" role="radiogroup" aria-label="材质预设">
+          <button type="button" class="material-option active" data-material="astralsea" role="radio" aria-checked="true"><span class="material-swatch astralsea"></span><span>Astral Sea<br />星界海</span></button>
+          <button type="button" class="material-option" data-material="bloodmoon" role="radio" aria-checked="false"><span class="material-swatch bloodmoon"></span><span>Blood Moon<br />血月</span></button>
+          <button type="button" class="material-option" data-material="fire" role="radio" aria-checked="false"><span class="material-swatch fire"></span><span>Fire<br />火焰</span></button>
+          <button type="button" class="material-option" data-material="ruby" role="radio" aria-checked="false"><span class="material-swatch ruby"></span><span>Ruby<br />红宝石</span></button>
+          <button type="button" class="material-option" data-material="sapphire" role="radio" aria-checked="false"><span class="material-swatch sapphire"></span><span>Sapphire<br />蓝宝石</span></button>
+          <button type="button" class="material-option" data-material="amethyst" role="radio" aria-checked="false"><span class="material-swatch amethyst"></span><span>Amethyst<br />紫水晶</span></button>
+        </div>
+      </section>
+
+
+      <form id="roll-form" class="expression-panel hidden">
+        <input id="notation" value="1d20" autocomplete="off" inputmode="text" aria-label="骰子表达式" />
+        <button type="submit">确定</button>
+      </form>
+
+      <nav class="bottom-controls" aria-label="操作">
+        <button id="force-toggle" type="button" class="side-button" aria-label="力度" title="力度">
+          <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <path d="M19 28V15a5 5 0 0 1 10 0v10h1V12a5 5 0 0 1 10 0v13h1V15a5 5 0 0 1 10 0v18l2-3a5 5 0 0 1 8 6L49 55H24L12 42a6 6 0 0 1 7-9l4 3v-8h-4z" />
+          </svg>
+        </button>
+        <button id="roll-button" type="button" class="roll-button" aria-label="掷骰，长按编辑表达式" title="掷骰，长按编辑表达式"></button>
+        <button id="style-toggle" type="button" class="side-button" aria-label="骰子样式" title="骰子样式">
+          <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <path d="M32 6 55 18v28L32 58 9 46V18L32 6zm0 6.8L17.5 20.2 32 27.6l14.5-7.4L32 12.8zM15 26v16.2l14 7.3V33.3L15 26zm34 0-14 7.3v16.2l14-7.3V26z" />
+            <circle cx="32" cy="20" r="2.8" />
+            <circle cx="23" cy="38" r="2.6" />
+            <circle cx="41" cy="38" r="2.6" />
+          </svg>
+        </button>
+      </nav>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
