@@ -256,10 +256,26 @@ async function roll(input) {
 
 // ---- UI 事件 ----
 
+let submitJustHandled = false;
+function submitExpression() {
+  if (submitJustHandled) return;
+  submitJustHandled = true;
+  setTimeout(() => { submitJustHandled = false; }, 400); // 防止 click + submit 双触发
+  hideTransientPanels();
+  notationEl?.blur(); // iOS 上收键盘，避免视口回弹与画布位置错乱
+  roll(notationEl.value);
+}
+
 formEl?.addEventListener('submit', (event) => {
   event.preventDefault();
-  hideTransientPanels();
-  roll(notationEl.value);
+  submitExpression();
+});
+
+// iOS 兜底：虚拟键盘打开时，点击表单里的 button 有时不会派发 submit（尤其 pointer 被打断的情况）。
+// 直接监听按钮 click 也走同一份逻辑，防抖由 submitJustHandled 保证只执行一次。
+formEl?.querySelector('button[type="submit"]')?.addEventListener('click', (event) => {
+  event.preventDefault();
+  submitExpression();
 });
 
 paramInputs.forEach((input) => {

@@ -374,6 +374,18 @@ button {
   border-radius: 12px;
   background: linear-gradient(180deg, #c89635, #744715);
   font-weight: 700;
+  /* 同 .roll-button：关闭 iOS 长按 callout / 触觉反馈，避免 tap 被吞。 */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.side-button {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .bottom-controls {
