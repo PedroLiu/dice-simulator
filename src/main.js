@@ -76,6 +76,21 @@ const box = new DiceBox('#scene-container', {
 
 // ---- Hook 库内部方法 ----
 
+// iOS Safari 上，无用户手势时 <audio> 的 canplaythrough 事件常常不触发，会让 dice-box 的
+// loadSounds() 里 await loadAudio 永远挂起，最终整个 initialize 卡住。这里给 loadAudio 加超时兜底。
+const originalLoadAudio = box.loadAudio.bind(box);
+box.loadAudio = (src) => {
+  let settled = false;
+  return new Promise((resolve) => {
+    originalLoadAudio(src).then((audio) => {
+      if (!settled) { settled = true; resolve(audio); }
+    });
+    setTimeout(() => {
+      if (!settled) { settled = true; resolve(null); } // 超时静默失败，让初始化继续；无音效不影响掷骰
+    }, 1200);
+  });
+};
+
 // 世界墙每次重建后，都要重新调物理参数并把下墙抬到按钮上方。
 const originalMakeWorldBox = box.makeWorldBox.bind(box);
 box.makeWorldBox = (...args) => {
