@@ -348,9 +348,9 @@ button {
 .material-swatch.astralsea { background: linear-gradient(135deg, #050505, #001b32, #ff7b00); }
 .material-swatch.bloodmoon { background: linear-gradient(135deg, #160000, #6f0000, #b83a3a); }
 .material-swatch.fire { background: linear-gradient(135deg, #4c1009, #f43c04, #f8d84f); }
-.material-swatch.ruby { background: linear-gradient(135deg, rgba(90,0,18,0.8), rgba(177,18,45,0.46), rgba(255,190,196,0.7)); }
-.material-swatch.sapphire { background: linear-gradient(135deg, rgba(3,19,66,0.85), rgba(23,70,184,0.46), rgba(160,195,255,0.72)); }
-.material-swatch.amethyst { background: linear-gradient(135deg, rgba(42,8,68,0.85), rgba(116,48,166,0.46), rgba(220,170,245,0.72)); }
+.material-swatch.bronze { background: linear-gradient(135deg, #301700, #7a4e06, #ffa20d); }
+.material-swatch.astral { background: linear-gradient(135deg, #3a5a90, #5578b8, #a0b8dc); }
+.material-swatch.cloudy { background: linear-gradient(135deg, #0a0f18, #4a5a6f, #a0b0c8); }
 
 .expression-panel {
   position: absolute;

@@ -113,6 +113,7 @@ export function syncDiceMeshesToBodies(box) {
 }
 
 // 降低边界弹性/摩擦并略微内缩墙体，减少高速撞边时卡住。同时把下墙抬到底部按钮上方。
+// 额外：在相机视野前加一个透明"天花板"，防止骰子飞出视野看不见。
 export function tuneWorldPhysics(box, bottomControlsEl) {
   if (!box.world) return;
   box.world.solver.iterations = 22;
@@ -139,6 +140,41 @@ export function tuneWorldPhysics(box, bottomControlsEl) {
   if (box.box_body?.bottomWall) box.box_body.bottomWall.position.y = -box.display.containerHeight * inset + bottomClearance;
   if (box.box_body?.leftWall) box.box_body.leftWall.position.x = box.display.containerWidth * inset;
   if (box.box_body?.rightWall) box.box_body.rightWall.position.x = -box.display.containerWidth * inset;
+
+  installCeiling(box);
+}
+
+// 在骰子上方加一个不可见的物理天花板。dice-box 库没有这一层，
+// 骰子被大力抛出时会飞出摄像机上方（越过 z 轴顶端）造成"骰子消失"。
+function installCeiling(box) {
+  // Plane 的世界墙对象都是 cannon.Body；从已有的 topWall 拿构造函数以避免直接依赖 cannon 模块。
+  const template = box.box_body?.topWall;
+  if (!template?.constructor || !template.material) return;
+  const BodyCtor = template.constructor;
+  const Vec3Ctor = template.position.constructor;
+  const QuatCtor = template.quaternion.constructor;
+  const ShapeCtor = template.shapes?.[0]?.constructor;
+  if (!ShapeCtor) return;
+
+  // 相机在 +z 高处朝下看；天花板放在 cameraHeight.max 附近，留一点余量避免视觉上压太低。
+  const cameraMax = box.cameraHeight?.max ?? 300;
+  const ceilingZ = cameraMax * 0.72;
+
+  // makeWorldBox 每次会重建 4 堵墙但不会碰 ceiling；如果我们之前加过的还残留，先移除再重加，避免重复。
+  if (box.box_body.ceiling) {
+    try { box.world.removeBody(box.box_body.ceiling); } catch {}
+  }
+  box.box_body.ceiling = new BodyCtor({
+    allowSleep: false,
+    mass: 0,
+    shape: new ShapeCtor(),
+    material: template.material,
+  });
+  // Plane 默认法向 +z；我们要让"下方"（-z）是碰撞面，绕 x 轴翻 180°。
+  box.box_body.ceiling.quaternion = new QuatCtor();
+  box.box_body.ceiling.quaternion.setFromAxisAngle(new Vec3Ctor(1, 0, 0), Math.PI);
+  box.box_body.ceiling.position.set(0, 0, ceilingZ);
+  box.world.addBody(box.box_body.ceiling);
 }
 
 // 分阶段陀螺衰减：让骰子看起来"转累了慢慢停"，同时兜底避免转 10 秒以上。

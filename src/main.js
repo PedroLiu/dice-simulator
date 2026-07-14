@@ -42,18 +42,15 @@ const customSoundFiles = [
 // 用相对当前 document 的路径，这样 dev（根路径）和 GitHub Pages（/repo/ 子路径）都能命中。
 const box = new DiceBox('#scene-container', {
   assetPath: new URL('assets/', document.baseURI).href,
-  // 关掉库自带的 28 个 mp3 顺序加载（iOS 上是初始化慢/卡的主因）；
-  // 我们只用自定义的 2 个音效，由 loadCustomSounds 单独异步加载，不阻塞初始化。
-  sounds: false,
+  // 声音库自带的骰面/桌面碰撞音；配合下面的 loadAudio 超时补丁，即便某些 mp3 加载慢也不会卡死初始化。
+  sounds: true,
   volume: params.volume,
   sound_dieMaterial: 'plastic',
   theme_surface: 'green-felt',
   theme_material: getPreset().material,
   theme_texture: getPreset().texture,
   theme_customColorset: buildColorSet(),
-  // 手机上关阴影：shadow map 是显存+GPU 大头，是 iOS 回收 WebGL context 的主因之一。
-  // 桌面端也不明显影响视觉。
-  shadows: false,
+  shadows: true,
   light_intensity: 2.4,
   gravity_multiplier: params.gravity,
   baseScale: params.size,
@@ -101,6 +98,48 @@ box.loadAudio = (src) => new Promise((resolve) => {
   setTimeout(() => done(null), 4000); // 4s 超时；音效非阻塞，慢一点没关系
 });
 
+// 库自带的 loadSounds 有两个问题：
+//   1) 顺序 await，28 个 mp3 依次加载慢死；
+//   2) counts 表用 'felt' 键但 surface 是 'green-felt'，桌面音永远加载失败（无声）。
+// 全部替换成并行 + 名字修正版。
+const SURFACE_SOUND_COUNTS = { 'green-felt': 7, felt: 7, wood_table: 7, wood_tray: 7, metal: 9 };
+const DICE_SOUND_COUNTS = { coin: 6, metal: 12, plastic: 15, wood: 12 };
+
+// 覆盖 loadSounds：立刻 return，真实加载在后台并行，加载完自动生效。
+// 这样 initialize 不会被音效阻塞；用户刚打开就能扔骰子。
+box.loadSounds = async function () {
+  const materialFromTexture = this.colorData?.texture?.material?.match(/wood|metal/g);
+  this.sound_dieMaterial = materialFromTexture ? this.colorData.texture.material : 'plastic';
+  scheduleBackgroundSoundLoad(this);
+};
+
+async function scheduleBackgroundSoundLoad(instance) {
+  const loadBatch = async (baseUrl, count) => {
+    if (!count) return [];
+    const urls = Array.from({ length: count }, (_, i) => `${baseUrl}${i + 1}.mp3`);
+    const audios = await Promise.all(urls.map((u) => instance.loadAudio(u)));
+    return audios.filter(Boolean);
+  };
+
+  const surfaceCount = SURFACE_SOUND_COUNTS[instance.surface] ?? 0;
+  const dieCount = DICE_SOUND_COUNTS[instance.sound_dieMaterial] || 0;
+  try {
+    const [surfaceAudios, coinAudios, dieAudios] = await Promise.all([
+      instance.sounds_table[instance.surface]?.length ? Promise.resolve(instance.sounds_table[instance.surface])
+        : loadBatch(`${instance.assetPath}sounds/surfaces/surface_${instance.surface}`, surfaceCount),
+      instance.sounds_dice.coin?.length ? Promise.resolve(instance.sounds_dice.coin)
+        : loadBatch(`${instance.assetPath}sounds/dicehit/dicehit_coin`, DICE_SOUND_COUNTS.coin),
+      instance.sounds_dice[instance.sound_dieMaterial]?.length ? Promise.resolve(instance.sounds_dice[instance.sound_dieMaterial])
+        : loadBatch(`${instance.assetPath}sounds/dicehit/dicehit_${instance.sound_dieMaterial}`, dieCount),
+    ]);
+    if (surfaceAudios.length) instance.sounds_table[instance.surface] = surfaceAudios;
+    if (coinAudios.length) instance.sounds_dice.coin = coinAudios;
+    if (dieAudios.length) instance.sounds_dice[instance.sound_dieMaterial] = dieAudios;
+  } catch (err) {
+    console.warn('后台音效加载失败', err);
+  }
+}
+
 // 世界墙每次重建后，都要重新调物理参数并把下墙抬到按钮上方。
 const originalMakeWorldBox = box.makeWorldBox.bind(box);
 box.makeWorldBox = (...args) => {
@@ -119,7 +158,8 @@ box.DiceFactory.createTextMaterial = (...args) => {
 const originalDiceFactoryCreate = box.DiceFactory.create.bind(box.DiceFactory);
 box.DiceFactory.create = (type, ...args) => {
   const diceDef = box.DiceFactory.get(type);
-  if (diceDef) diceDef.font = 'Cormorant Garamond, DNDOfficial, Cinzel, Georgia, serif';
+  // Cinzel Decorative：瘦长笔画 + 古典装饰感，DND 圈流行；配合我们自己的黑底盘足以清晰可读。
+  if (diceDef) diceDef.font = '"Cinzel Decorative", "Cinzel", Georgia, serif';
   const die = originalDiceFactoryCreate(type, ...args);
   tuneDieMaterials(die);
   return die;
@@ -186,6 +226,19 @@ function withTimeout(promise, ms, fallback) {
   ]);
 }
 
+async function loadCustomSounds() {
+  try {
+    const sounds = await Promise.all(customSoundFiles.map((file) => box.loadAudio(file)));
+    const validSounds = sounds.filter(Boolean);
+    if (validSounds.length === 0) return;
+    // 只覆盖骰子撞击音；桌面撞击音继续用官方 loadSounds 加载的 green-felt。
+    box.sounds_dice.plastic = validSounds;
+    box.sound_dieMaterial = 'plastic';
+  } catch (err) {
+    console.warn('自定义音效加载失败', err);
+  }
+}
+
 async function init() {
   try {
     // 字体加载最多等 1.5s：iOS Safari 弱网/CORS/证书问题下 document.fonts.ready 可能永不 resolve。
@@ -196,7 +249,7 @@ async function init() {
     tuneWorldPhysics(box, bottomControlsEl);
     installContextLossHandler();
     setStatus('已加载，输入表达式后掷骰');
-    // 音效后台加载，加载完了才启用；失败也不影响掷骰。
+    // 官方音效由覆盖后的 loadSounds 后台并行加载；再叠一层自定义骰音（比官方 plastic 更好听）。
     loadCustomSounds();
   } catch (err) {
     console.error(err);
@@ -284,21 +337,6 @@ function ensureContextAlive() {
     return false;
   }
   return true;
-}
-
-async function loadCustomSounds() {
-  try {
-    const sounds = await Promise.all(customSoundFiles.map((file) => box.loadAudio(file)));
-    const validSounds = sounds.filter(Boolean);
-    if (validSounds.length === 0) return;
-    // dice-box-threejs 会从数组中随机挑一个播放。骰子撞击 + 桌面撞击都替换为自定义音效。
-    box.sounds_dice.plastic = validSounds;
-    box.sounds_table[box.surface] = validSounds;
-    box.sound_dieMaterial = 'plastic';
-    box.sounds = true; // 有可用音效后再打开播放开关
-  } catch (err) {
-    console.warn('自定义音效加载失败，继续静音', err);
-  }
 }
 
 function applyAllParams() {
@@ -493,7 +531,7 @@ function bindTogglePanel(button, panel, onOpen) {
   button?.addEventListener('click', handler);
 }
 bindTogglePanel(forceToggleEl, forcePanelEl);
-bindTogglePanel(styleToggleEl, stylePanelEl, showStyleSamples);
+bindTogglePanel(styleToggleEl, stylePanelEl);
 
 function setPanelVisible(panel, visible) {
   panel?.classList.toggle('hidden', !visible);
@@ -507,22 +545,6 @@ function hideTransientPanels(except = null) {
 
 // ---- 材质切换 ----
 
-async function showStyleSamples() {
-  if (!box.initialized) return;
-  ui.pendingRoll = null;
-  ui.resultDisplayedForRoll = false;
-  clearStableResultWatcher();
-  box.clearDice();
-  box.rolling = false;
-  box.notationVectors = null;
-  clearResultSummary();
-  try {
-    await box.roll('1d4+1d6+1d8+1d10+1d12+1d20');
-  } catch (err) {
-    console.warn('样式预览失败', err);
-  }
-}
-
 async function applyVisualPreset() {
   const preset = getPreset();
   // 切材质前先释放旧的纹理/几何 GPU 资源，避免手机上显存累积导致白屏。
@@ -532,8 +554,9 @@ async function applyVisualPreset() {
     theme_texture: preset.texture,
     theme_material: preset.material,
   });
+  // 只清桌面，不再扔样例骰子——手机上重复加载 6 种模型 + 展示动画极易撑爆显存。
+  // 用户下一次点掷骰时才会看到新材质。
   box.clearDice();
-  if (!stylePanelEl?.classList.contains('hidden')) await showStyleSamples();
 }
 
 function disposeDiceFactoryCache() {

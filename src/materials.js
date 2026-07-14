@@ -33,50 +33,37 @@ export const materialPresets = {
     material: 'metal',
     description: '社区内置 Fire：火焰纹理 + 金属高光',
   },
-  ruby: {
-    label: 'Ruby 红宝石',
-    foreground: '#fff2b8',
-    background: '#c81a36',
-    outline: 'none',
-    edge: '#ff8892',
-    edgeAlpha: 0.18,
-    texture: 'water',
-    material: 'glass',
-    transparent: true,
-    alpha: 0.34,
-    emissive: '#a0142c',
-    emissiveIntensity: 0.75,
-    description: 'Ruby：water + glass 半透明 + 强红光',
+  // ↓ 以下三个是社区（3d-dice 官方仓库 colorsets.js）内置预设，颜值稳定 + 手机端可读性好。
+  bronze: {
+    label: 'Thylean 青铜',
+    foreground: ['#FF9159', '#FFB066', '#FFBF59', '#FFD059'],
+    background: ['#705206', '#7A4E06', '#643100', '#7A2D06'],
+    outline: ['#3D2D03', '#472D04', '#301700', '#471A04'],
+    edge: ['#FF5D0D', '#FF7B00', '#FFA20D', '#FFBA0D'],
+    texture: ['bronze01', 'bronze02', 'bronze03', 'bronze03a', 'bronze03b', 'bronze04'],
+    material: 'metal',
+    description: 'Thylean Bronze：多层青铜金属渐变，最有游戏味',
   },
-  sapphire: {
-    label: 'Sapphire 蓝宝石',
-    foreground: '#fff2b8',
-    background: '#2555c8',
-    outline: 'none',
-    edge: '#7fa6f4',
-    edgeAlpha: 0.18,
-    texture: 'water',
-    material: 'glass',
-    transparent: true,
-    alpha: 0.34,
-    emissive: '#1a3fb0',
-    emissiveIntensity: 0.75,
-    description: 'Sapphire：water + glass 半透明 + 强蓝光',
+  // Astral 星海：中亮蓝底 + astral 星云纹。astral 贴图是 multiply 混合（底色 × 花纹），
+  // 底色越亮，花纹越明显。用中等亮度蓝色，花纹才能清晰浮现。
+  astral: {
+    label: 'Astral 星海',
+    foreground: '#f4f8ff',
+    background: ['#3a5a90', '#4468a5', '#3d6bad', '#5578b8'],
+    outline: '#050a18',
+    texture: 'astral',
+    material: 'plastic',
+    description: 'Astral：中亮蓝底 + 星云纹，花纹清晰',
   },
-  amethyst: {
-    label: 'Amethyst 紫水晶',
-    foreground: '#fff2b8',
-    background: '#8a3ec2',
-    outline: 'none',
-    edge: '#d4a4ee',
-    edgeAlpha: 0.16,
-    texture: 'water',
-    material: 'glass',
-    transparent: true,
-    alpha: 0.34,
-    emissive: '#6a1fa0',
-    emissiveIntensity: 0.68,
-    description: 'Amethyst：water + glass 半透明 + 紫光',
+  // Cloudy 云雾：cloudy_2 是 multiply 云纹（不像 cloudy 是透明蒙版），配 plastic 干净稳重。
+  cloudy: {
+    label: 'Cloudy 云雾',
+    foreground: '#f8f8f8',
+    background: '#4a5a6f',
+    outline: '#0a0f18',
+    texture: 'cloudy_2',
+    material: 'plastic',
+    description: 'Cloudy：蓝灰云纹 + 塑料质感，稳重耐看',
   },
 };
 
@@ -138,33 +125,24 @@ export function drawGoldFoilLabel(textureData, diceDef, labels, index, _size, ma
   const drawOne = (text, x, y, fontSize) => {
     const value = String(text).trim();
     if (!value || value === '0') return;
-    // 更粗的字重（700），比 600 视觉重量明显；无衬线字体在低分屏更清晰。
-    ctx.font = `700 ${fontSize}px "Cinzel", "Cormorant Garamond", Georgia, sans-serif`;
+    // Cinzel Decorative 400（Regular）：笔画瘦，配合更大的字号 + 黑底盘视觉更抢眼。
+    ctx.font = `400 ${fontSize}px "Cinzel Decorative", "Cinzel", Georgia, serif`;
 
-    // === 1. 底盘：先在字底下画一个大黑晕圆，把复杂纹理彻底盖掉。这是社区最有效的招 ===
+    // === 1. 字沿模糊黑晕：只沿着字的轮廓外扩一圈黑烟，不像"底盘"那样是个圆，
+    //        既能压掉紧贴字的纹理、又保留了周围的骰面质感。 ===
     ctx.save();
-    const bgRadius = fontSize * 0.68;
-    const bgGrad = ctx.createRadialGradient(x, y, 0, x, y, bgRadius);
-    bgGrad.addColorStop(0, 'rgba(0, 0, 0, 0.72)');
-    bgGrad.addColorStop(0.65, 'rgba(0, 0, 0, 0.45)');
-    bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = bgGrad;
-    ctx.beginPath();
-    ctx.arc(x, y, bgRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
-    // === 2. 外层柔和黑晕：模糊阴影再铺一层 ===
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
-    ctx.shadowBlur = Math.max(6, fontSize * 0.18);
-    ctx.lineWidth = Math.max(4, fontSize * 0.14);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.98)';
+    ctx.shadowBlur = Math.max(6, fontSize * 0.20);
+    ctx.lineWidth = Math.max(2.5, fontSize * 0.08);
     ctx.strokeStyle = 'rgba(15, 5, 0, 0.98)';
+    ctx.strokeText(value, x, y);
+    // 再叠一次让黑晕更实、边界更清晰。
+    ctx.shadowBlur = Math.max(3, fontSize * 0.10);
     ctx.strokeText(value, x, y);
     ctx.restore();
 
-    // === 3. 深色硬描边：清晰硬边缘 ===
-    ctx.lineWidth = Math.max(3, fontSize * 0.10);
+    // === 2. 深色硬描边：清晰硬边缘 ===
+    ctx.lineWidth = Math.max(1.8, fontSize * 0.055);
     ctx.strokeStyle = 'rgba(28, 10, 0, 1)';
     ctx.strokeText(value, x, y);
 
@@ -202,8 +180,8 @@ export function drawGoldFoilLabel(textureData, diceDef, labels, index, _size, ma
       ctx.rotate(rotation * Math.PI / 180);
       ctx.translate(-S / 2, -S / 2);
     }
-    // 字号放大到 0.82（原 0.72），黑底盘足够压住纹理，视觉更抢眼。
-    let fontSize = S / (1 + 2 * margin) * 0.82;
+    // 字号放大到 0.95：Cinzel Decorative 笔画细，需要更大字号视觉才够重。
+    let fontSize = S / (1 + 2 * margin) * 0.95;
     let x = S / 2;
     let y = S / 2 + 10;
     if (diceDef.shape === 'd10') { fontSize *= 0.78; y = y * 1.15 - 10; }
