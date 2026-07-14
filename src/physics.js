@@ -83,9 +83,10 @@ export function applyBodyParamsToDie(die, boostSpin = false) {
   if (!die?.body) return;
   die.body.linearDamping = params.linearDamping;
   die.body.angularDamping = Math.max(0.00018, params.angularDamping / Math.sqrt(Math.max(1, params.spin)));
-  // 让物理本身更晚 sleep，视觉上会从高速旋转慢慢衰减到停止；结果显示由 startStableResultWatcher 负责。
-  die.body.sleepSpeedLimit = 2.6;
-  die.body.sleepTimeLimit = 0.9;
+  // 骰子视觉上"看起来停了"到实际判定 sleep 之间的等待，直接决定"停下-出结果"的间隔。
+  // 之前 sleepTimeLimit=0.9 秒偏保守；收紧到 0.25 秒 + 稍大的 sleepSpeedLimit 让结果更快弹出。
+  die.body.sleepSpeedLimit = 3.4;
+  die.body.sleepTimeLimit = 0.25;
   die.__spawnedAt = performance.now();
   if (boostSpin && !die.body.__spinBoosted) {
     // 主要补竖直轴角速度，让骰子更像陀螺一样原地转，而不是被甩飞。
@@ -153,10 +154,11 @@ export function clearStableResultWatcher() {
 export function startStableResultWatcher(box, plan) {
   clearStableResultWatcher();
   const watcherStart = performance.now();
-  const spinAllow = 2200;   // 允许自由转多久
-  const gentleUntil = 3600; // 温和衰减
-  const firmUntil = 5200;   // 收紧衰减
-  const hardStop = 6500;    // 硬停
+  // 收紧整体时间线：先让骰子自由转 1.4s（表现足够精彩），之后阶梯性收紧衰减，最迟 4s 硬停。
+  const spinAllow = 1400;   // 允许自由转多久
+  const gentleUntil = 2400; // 温和衰减
+  const firmUntil = 3200;   // 收紧衰减
+  const hardStop = 4000;    // 硬停
 
   stableResultTimer = setInterval(() => {
     if (ui.pendingRoll !== plan || ui.resultDisplayedForRoll) {
