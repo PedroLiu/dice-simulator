@@ -78,20 +78,26 @@ const box = new DiceBox('#scene-container', {
 
 // ---- Hook 库内部方法 ----
 
-// iOS Safari 上，无用户手势时 <audio> 的 canplaythrough 事件常常不触发，会让 dice-box 的
-// loadSounds() 里 await loadAudio 永远挂起，最终整个 initialize 卡住。这里给 loadAudio 加超时兜底。
-const originalLoadAudio = box.loadAudio.bind(box);
-box.loadAudio = (src) => {
+// iOS Safari 上，无用户手势时 <audio> 的 canplaythrough 事件常常不触发（比 canplay 苛刻很多），
+// 会让 dice-box 的 loadAudio 永远挂起。这里改用 canplay + loadeddata 双重判定 + 超时兜底。
+box.loadAudio = (src) => new Promise((resolve) => {
+  const audio = new Audio();
+  audio.crossOrigin = 'anonymous';
+  audio.preload = 'auto';
   let settled = false;
-  return new Promise((resolve) => {
-    originalLoadAudio(src).then((audio) => {
-      if (!settled) { settled = true; resolve(audio); }
-    });
-    setTimeout(() => {
-      if (!settled) { settled = true; resolve(null); } // 超时静默失败，让初始化继续；无音效不影响掷骰
-    }, 1200);
-  });
-};
+  const done = (val) => {
+    if (settled) return;
+    settled = true;
+    resolve(val);
+  };
+  audio.addEventListener('canplaythrough', () => done(audio), { once: true });
+  audio.addEventListener('canplay', () => done(audio), { once: true });     // 比 canplaythrough 快得多
+  audio.addEventListener('loadeddata', () => done(audio), { once: true }); // iOS 有时只到 loadeddata
+  audio.addEventListener('error', () => done(null), { once: true });
+  audio.src = src;
+  audio.load(); // iOS 上必须显式调 load 才会开始下载
+  setTimeout(() => done(null), 4000); // 4s 超时；音效非阻塞，慢一点没关系
+});
 
 // 世界墙每次重建后，都要重新调物理参数并把下墙抬到按钮上方。
 const originalMakeWorldBox = box.makeWorldBox.bind(box);
@@ -363,10 +369,30 @@ function showExpressionEditor() {
   notationEl.select();
 }
 
+// iOS Safari 要求音频必须在用户手势 stack 内首次调用 play()，之后才允许在异步回调里自动播放。
+// 所以第一次点掷骰时预热一次：静音 play+pause，解锁自动播放限制。
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  const pool = [
+    ...(box.sounds_dice?.plastic || []),
+    ...(box.sounds_table?.[box.surface] || []),
+  ];
+  for (const audio of pool) {
+    if (!audio) continue;
+    const prevVolume = audio.volume;
+    audio.volume = 0;
+    audio.play().then(() => { audio.pause(); audio.currentTime = 0; audio.volume = prevVolume; })
+      .catch(() => { audio.volume = prevVolume; });
+  }
+}
+
 function triggerRoll() {
   if (shortPressJustHandled) return;
   shortPressJustHandled = true;
   setTimeout(() => { shortPressJustHandled = false; }, 400); // 防抖：pointerup 和 click 只处理一次
+  unlockAudio();
   hideTransientPanels();
   roll(notationEl.value);
 }
