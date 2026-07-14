@@ -51,7 +51,9 @@ const box = new DiceBox('#scene-container', {
   theme_material: getPreset().material,
   theme_texture: getPreset().texture,
   theme_customColorset: buildColorSet(),
-  shadows: true,
+  // 手机上关阴影：shadow map 是显存+GPU 大头，是 iOS 回收 WebGL context 的主因之一。
+  // 桌面端也不明显影响视觉。
+  shadows: false,
   light_intensity: 2.4,
   gravity_multiplier: params.gravity,
   baseScale: params.size,
@@ -523,16 +525,35 @@ async function showStyleSamples() {
 
 async function applyVisualPreset() {
   const preset = getPreset();
+  // 切材质前先释放旧的纹理/几何 GPU 资源，避免手机上显存累积导致白屏。
+  disposeDiceFactoryCache();
   await box.updateConfig({
     theme_customColorset: buildColorSet(),
     theme_texture: preset.texture,
     theme_material: preset.material,
   });
-  // 几何/材质缓存跟预设有关，切换后要清空并重掷。
-  box.DiceFactory.materials_cache = {};
-  box.DiceFactory.geometries = {};
   box.clearDice();
   if (!stylePanelEl?.classList.contains('hidden')) await showStyleSamples();
+}
+
+function disposeDiceFactoryCache() {
+  if (!box.DiceFactory) return;
+  // materials_cache 里是 { key: [material...] } 结构；每个 material 可能包含 map、bumpMap 等纹理。
+  for (const materials of Object.values(box.DiceFactory.materials_cache || {})) {
+    for (const mat of Array.isArray(materials) ? materials : [materials]) {
+      if (!mat) continue;
+      mat.map?.dispose?.();
+      mat.bumpMap?.dispose?.();
+      mat.normalMap?.dispose?.();
+      mat.envMap?.dispose?.();
+      mat.dispose?.();
+    }
+  }
+  for (const geom of Object.values(box.DiceFactory.geometries || {})) {
+    geom?.dispose?.();
+  }
+  box.DiceFactory.materials_cache = {};
+  box.DiceFactory.geometries = {};
 }
 
 function syncMaterialOptions() {
