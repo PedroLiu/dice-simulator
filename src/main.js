@@ -153,17 +153,28 @@ box.startClickThrow = (notation) => {
 
 // ---- 初始化 & 参数 ----
 
+// 给可能卡住的 async 步骤一个超时兜底，超时后走 fallback，不阻塞初始化。
+function withTimeout(promise, ms, fallback) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 async function init() {
   try {
-    if (document.fonts?.ready) await document.fonts.ready;
+    // 字体加载最多等 1.5s：iOS Safari 弱网/CORS/证书问题下 document.fonts.ready 可能永不 resolve。
+    if (document.fonts?.ready) await withTimeout(document.fonts.ready, 1500);
+    setStatus('加载素材中...');
     await box.initialize();
-    await loadCustomSounds();
+    // 自定义音效非关键路径，给 2s 超时，失败就走库自带音效。
+    await withTimeout(loadCustomSounds(), 2000);
     applyAllParams();
     tuneWorldPhysics(box, bottomControlsEl);
     setStatus('已加载，输入表达式后掷骰');
   } catch (err) {
     console.error(err);
-    setStatus('初始化失败，请看控制台');
+    setStatus(`初始化失败：${err?.message || err}`);
     showResultSummary('!', String(err?.message || err));
   }
 }
