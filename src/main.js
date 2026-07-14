@@ -198,13 +198,13 @@ function applyAllParams() {
   applyBodyParams(box);
 }
 
-function setParam(name, rawValue) {
+function setParam(name, rawValue, { updateStatus = true } = {}) {
   const value = Number(rawValue);
   params[name] = value;
   const output = document.querySelector(`[data-value="${name}"]`);
   if (output) output.textContent = name === 'size' ? String(Math.round(value)) : value.toFixed(1);
-  if (name === 'force') { applyAllParams(); setStatus(`力度 ${params.force.toFixed(1)}`); }
-  else if (name === 'size') { applyAllParams(); setStatus(`骰子大小 ${Math.round(params.size)}`); }
+  if (name === 'force') { applyAllParams(); if (updateStatus) setStatus(`力度 ${params.force.toFixed(1)}`); }
+  else if (name === 'size') { applyAllParams(); if (updateStatus) setStatus(`骰子大小 ${Math.round(params.size)}`); }
 }
 
 // ---- 掷骰主流程 ----
@@ -279,7 +279,8 @@ formEl?.querySelector('button[type="submit"]')?.addEventListener('click', (event
 });
 
 paramInputs.forEach((input) => {
-  setParam(input.dataset.param, input.value);
+  // 初始化不写 status，避免刚加载完就把"已加载..."文字盖掉。
+  setParam(input.dataset.param, input.value, { updateStatus: false });
   input.addEventListener('input', () => setParam(input.dataset.param, input.value));
 });
 
@@ -332,18 +333,23 @@ rollButtonEl?.addEventListener('click', () => {
 rollButtonEl?.addEventListener('pointercancel', () => clearTimeout(longPressTimer));
 rollButtonEl?.addEventListener('contextmenu', (event) => event.preventDefault());
 
-forceToggleEl?.addEventListener('click', () => {
-  const willShow = forcePanelEl?.classList.contains('hidden');
-  hideTransientPanels(willShow ? 'force' : null);
-  setPanelVisible(forcePanelEl, Boolean(willShow));
-});
-
-styleToggleEl?.addEventListener('click', () => {
-  const willShow = stylePanelEl?.classList.contains('hidden');
-  hideTransientPanels(willShow ? 'style' : null);
-  setPanelVisible(stylePanelEl, Boolean(willShow));
-  if (willShow) showStyleSamples();
-});
+// iOS 26 上侧边按钮 click 有时被 haptic touch 吞，用防抖后同时监听 pointerup + click 兜底。
+function bindTogglePanel(button, panel, onOpen) {
+  let guard = false;
+  const handler = () => {
+    if (guard) return;
+    guard = true;
+    setTimeout(() => { guard = false; }, 400);
+    const willShow = panel?.classList.contains('hidden');
+    hideTransientPanels(willShow ? panel.id.replace('-panel', '') : null);
+    setPanelVisible(panel, Boolean(willShow));
+    if (willShow) onOpen?.();
+  };
+  button?.addEventListener('pointerup', handler);
+  button?.addEventListener('click', handler);
+}
+bindTogglePanel(forceToggleEl, forcePanelEl);
+bindTogglePanel(styleToggleEl, stylePanelEl, showStyleSamples);
 
 function setPanelVisible(panel, visible) {
   panel?.classList.toggle('hidden', !visible);
@@ -398,14 +404,23 @@ function syncMaterialOptions() {
   });
 }
 
+// iOS 26 上普通 click 偶尔被 haptic touch 吞掉；用 pointerup 触发 + 防抖，比 click 更可靠。
+let materialPressGuard = false;
+async function pickMaterial(button) {
+  if (materialPressGuard) return;
+  materialPressGuard = true;
+  setTimeout(() => { materialPressGuard = false; }, 400);
+  const next = button.dataset.material;
+  if (!next || next === ui.preset || !materialPresets[next]) return;
+  ui.preset = next;
+  syncMaterialOptions();
+  await applyVisualPreset();
+}
+
 materialOptionEls.forEach((button) => {
-  button.addEventListener('click', async () => {
-    const next = button.dataset.material;
-    if (!next || next === ui.preset || !materialPresets[next]) return;
-    ui.preset = next;
-    syncMaterialOptions();
-    await applyVisualPreset();
-  });
+  // 两个都监听，谁先触发用谁；防抖保证只执行一次。
+  button.addEventListener('pointerup', () => pickMaterial(button));
+  button.addEventListener('click', () => pickMaterial(button));
 });
 
 syncMaterialOptions();

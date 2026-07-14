@@ -3,6 +3,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iOS 26 Safari 上，任意 button/[role=radio] 长按都可能触发 haptic touch / callout，
+   把 pointerup 吞成 pointercancel、click 丢失。全局关掉这些行为，保证点按干净。 */
+button,
+[role="radio"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
 html,
 body {
   margin: 0;
