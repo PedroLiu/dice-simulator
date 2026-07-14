@@ -42,7 +42,9 @@ const customSoundFiles = [
 // 用相对当前 document 的路径，这样 dev（根路径）和 GitHub Pages（/repo/ 子路径）都能命中。
 const box = new DiceBox('#scene-container', {
   assetPath: new URL('assets/', document.baseURI).href,
-  sounds: true,
+  // 关掉库自带的 28 个 mp3 顺序加载（iOS 上是初始化慢/卡的主因）；
+  // 我们只用自定义的 2 个音效，由 loadCustomSounds 单独异步加载，不阻塞初始化。
+  sounds: false,
   volume: params.volume,
   sound_dieMaterial: 'plastic',
   theme_surface: 'green-felt',
@@ -182,11 +184,11 @@ async function init() {
     if (document.fonts?.ready) await withTimeout(document.fonts.ready, 1500);
     setStatus('加载素材中...');
     await box.initialize();
-    // 自定义音效非关键路径，给 2s 超时，失败就走库自带音效。
-    await withTimeout(loadCustomSounds(), 2000);
     applyAllParams();
     tuneWorldPhysics(box, bottomControlsEl);
     setStatus('已加载，输入表达式后掷骰');
+    // 音效后台加载，加载完了才启用；失败也不影响掷骰。
+    loadCustomSounds();
   } catch (err) {
     console.error(err);
     setStatus(`初始化失败：${err?.message || err}`);
@@ -203,8 +205,9 @@ async function loadCustomSounds() {
     box.sounds_dice.plastic = validSounds;
     box.sounds_table[box.surface] = validSounds;
     box.sound_dieMaterial = 'plastic';
+    box.sounds = true; // 有可用音效后再打开播放开关
   } catch (err) {
-    console.warn('自定义音效加载失败，继续使用官方音效', err);
+    console.warn('自定义音效加载失败，继续静音', err);
   }
 }
 
